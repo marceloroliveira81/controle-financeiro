@@ -53,6 +53,7 @@ const Login = () => {
                   password_input_placeholder: 'Sua nova senha',
                   button_label: 'Cadastrar',
                   link_text: 'Não tem uma conta? Cadastre-se',
+                  confirmation_text: 'Verifique seu e-mail para o link de confirmação',
                 },
                 forgotten_password: {
                   email_label: 'Seu email',
