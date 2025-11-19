@@ -4,9 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useTheme } from 'next-themes';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Login = () => {
   const { session } = useSession();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     // You can add logic here if needed when the session changes
@@ -17,17 +20,21 @@ const Login = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             Acesse sua conta
           </h2>
         </div>
-        <div className="p-4 rounded-lg shadow-lg bg-white">
+        <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-lg">
           <Auth
             supabaseClient={supabase}
             appearance={{ theme: ThemeSupa }}
+            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
             providers={[]}
             localization={{
               variables: {
@@ -44,10 +51,10 @@ const Login = () => {
                   link_text: 'Não tem uma conta? Cadastre-se',
                 },
                 forgotten_password: {
-                    email_label: 'Seu email',
-                    button_label: 'Enviar instruções',
-                    link_text: 'Esqueceu sua senha?',
-                }
+                  email_label: 'Seu email',
+                  button_label: 'Enviar instruções',
+                  link_text: 'Esqueceu sua senha?',
+                },
               },
             }}
           />
