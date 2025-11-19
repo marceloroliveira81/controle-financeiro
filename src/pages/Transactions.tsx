@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { TransactionForm } from '@/components/TransactionForm';
 import { TransactionsTable } from '@/components/TransactionsTable';
@@ -18,15 +17,37 @@ import { AlertTriangle } from 'lucide-react';
 import { Transaction } from '../types';
 import { showSuccess, showError } from '@/utils/toast';
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog';
+import {
+  TransactionsFilter,
+  Filters,
+} from '@/components/TransactionsFilter';
+import { format } from 'date-fns';
 
-const fetchTransactions = async (userId: string | undefined) => {
+const fetchTransactions = async (
+  userId: string | undefined,
+  filters: Filters
+) => {
   if (!userId) return [];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('transactions')
     .select('*')
-    .eq('user_id', userId)
-    .order('date', { ascending: false });
+    .eq('user_id', userId);
+
+  if (filters.dateRange?.from) {
+    query = query.gte('date', format(filters.dateRange.from, 'yyyy-MM-dd'));
+  }
+  if (filters.dateRange?.to) {
+    query = query.lte('date', format(filters.dateRange.to, 'yyyy-MM-dd'));
+  }
+  if (filters.description) {
+    query = query.ilike('description', `%${filters.description}%`);
+  }
+  if (filters.type) {
+    query = query.eq('type', filters.type);
+  }
+
+  const { data, error } = await query.order('date', { ascending: false });
 
   if (error) {
     throw new Error(error.message);
@@ -37,13 +58,25 @@ const fetchTransactions = async (userId: string | undefined) => {
 const Transactions = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | undefined>(undefined);
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    Transaction | undefined
+  >(undefined);
+  const [filters, setFilters] = useState<Filters>({
+    dateRange: undefined,
+    description: '',
+    type: '',
+  });
   const { user } = useSession();
   const queryClient = useQueryClient();
 
-  const { data: transactions, isLoading, isError, error } = useQuery({
-    queryKey: ['transactions', user?.id],
-    queryFn: () => fetchTransactions(user?.id),
+  const {
+    data: transactions,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['transactions', user?.id, filters],
+    queryFn: () => fetchTransactions(user?.id, filters),
     enabled: !!user,
   });
 
@@ -92,6 +125,8 @@ const Transactions = () => {
         <h1 className="text-2xl font-bold">Lançamentos</h1>
         <Button onClick={handleAdd}>Adicionar Lançamento</Button>
       </div>
+
+      <TransactionsFilter filters={filters} onFilterChange={setFilters} />
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[425px]">
