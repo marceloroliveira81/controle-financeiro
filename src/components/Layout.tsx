@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { LayoutDashboard, List, Filter } from 'lucide-react';
+import { LayoutDashboard, List } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -38,9 +39,12 @@ const Layout = () => {
             <span>Lançamentos</span>
           </NavLink>
         </nav>
-        <Button onClick={handleSignOut} variant="outline">
-          Sair
-        </Button>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <Button onClick={handleSignOut} variant="outline">
+            Sair
+          </Button>
+        </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <Outlet />
