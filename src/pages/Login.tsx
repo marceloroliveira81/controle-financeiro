@@ -55,32 +55,33 @@ const Login = () => {
   });
 
   const handleSignIn = async (values: z.infer<typeof signInSchema>) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
-    if (error) throw error;
-  };
-
-  const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
-    const { error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-    });
-    if (error) throw error;
-    setMessage('Cadastro realizado! Verifique seu e-mail para o link de confirmação.');
-  };
-
-  const handleSubmit = async (values: any) => {
     setLoading(true);
     setError(null);
     setMessage(null);
     try {
-      if (view === 'sign_in') {
-        await handleSignIn(values);
-      } else {
-        await handleSignUp(values);
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(errorMap[err.message] || 'Ocorreu um erro. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+      });
+      if (error) throw error;
+      setMessage('Cadastro realizado! Verifique seu e-mail para o link de confirmação.');
     } catch (err: any) {
       setError(errorMap[err.message] || 'Ocorreu um erro. Tente novamente.');
     } finally {
@@ -100,13 +101,6 @@ const Login = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const isSignIn = view === 'sign_in';
-  const form = isSignIn ? signInForm : signUpForm;
-  const title = isSignIn ? 'Acesse sua conta' : 'Crie sua conta';
-  const buttonLabel = isSignIn ? 'Entrar' : 'Cadastrar';
-  const loadingLabel = isSignIn ? 'Entrando...' : 'Cadastrando...';
-  const toggleLinkText = isSignIn ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre';
-
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="absolute top-4 right-4">
@@ -115,64 +109,101 @@ const Login = () => {
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
-            {title}
+            {view === 'sign_in' ? 'Acesse sua conta' : 'Crie sua conta'}
           </h2>
         </div>
         <div className="rounded-lg border bg-card p-8 text-card-foreground shadow-lg">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Erro</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              {message && (
-                 <Alert variant="default">
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertTitle>Sucesso</AlertTitle>
-                    <AlertDescription>{message}</AlertDescription>
-                </Alert>
-              )}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Seu email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="seuemail@exemplo.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{isSignIn ? 'Sua senha' : 'Crie uma senha'}</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder={isSignIn ? 'Sua senha' : 'Pelo menos 6 caracteres'} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? loadingLabel : buttonLabel}
-              </Button>
-            </form>
-          </Form>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {message && (
+             <Alert variant="default" className="mb-4">
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Sucesso</AlertTitle>
+                <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
+
+          {view === 'sign_in' ? (
+            <Form {...signInForm}>
+              <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-6">
+                <FormField
+                  control={signInForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seu email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="seuemail@exemplo.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={signInForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sua senha</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Sua senha" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Entrando...' : 'Entrar'}
+                </Button>
+              </form>
+            </Form>
+          ) : (
+            <Form {...signUpForm}>
+              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-6">
+                <FormField
+                  control={signUpForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seu email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="seuemail@exemplo.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={signUpForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Crie uma senha</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Pelo menos 6 caracteres" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Cadastrando...' : 'Cadastrar'}
+                </Button>
+              </form>
+            </Form>
+          )}
+
           <div className="mt-6 text-center text-sm">
             <p>
               <span onClick={toggleView} className="font-medium text-primary hover:underline cursor-pointer">
-                {toggleLinkText}
+                {view === 'sign_in' ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre'}
               </span>
             </p>
-            {/* A recuperação de senha pode ser adicionada depois, se necessário */}
           </div>
         </div>
       </div>
