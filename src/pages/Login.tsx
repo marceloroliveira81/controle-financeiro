@@ -45,6 +45,7 @@ const Login = () => {
                   password_input_placeholder: 'Sua senha',
                   button_label: 'Entrar',
                   link_text: 'Já tem uma conta? Entre',
+                  loading_button_label: 'Entrando...',
                 },
                 sign_up: {
                   email_label: 'Seu email',
@@ -53,13 +54,25 @@ const Login = () => {
                   password_input_placeholder: 'Sua nova senha',
                   button_label: 'Cadastrar',
                   link_text: 'Não tem uma conta? Cadastre-se',
-                  confirmation_text: 'Verifique seu e-mail para o link de confirmação',
+                  confirmation_text:
+                    'Verifique seu e-mail para o link de confirmação',
+                  loading_button_label: 'Cadastrando...',
                 },
                 forgotten_password: {
                   email_label: 'Seu email',
                   email_input_placeholder: 'seuemail@exemplo.com',
                   button_label: 'Enviar instruções',
                   link_text: 'Esqueceu sua senha?',
+                  loading_button_label: 'Enviando instruções...',
+                  confirmation_text:
+                    'Verifique seu e-mail para o link de redefinição',
+                },
+                update_password: {
+                  password_label: 'Nova senha',
+                  password_input_placeholder: 'Sua nova senha',
+                  button_label: 'Atualizar senha',
+                  loading_button_label: 'Atualizando...',
+                  confirmation_text: 'Sua senha foi atualizada com sucesso',
                 },
               },
             }}
