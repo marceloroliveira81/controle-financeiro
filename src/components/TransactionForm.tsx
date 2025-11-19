@@ -27,6 +27,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -146,7 +147,7 @@ export const TransactionForm = ({ setOpen, transaction }: TransactionFormProps) 
                       )}
                     >
                       {field.value ? (
-                        format(field.value, 'PPP')
+                        format(field.value, 'PPP', { locale: ptBR })
                       ) : (
                         <span>Escolha uma data</span>
                       )}
@@ -163,6 +164,7 @@ export const TransactionForm = ({ setOpen, transaction }: TransactionFormProps) 
                       date > new Date() || date < new Date('1900-01-01')
                     }
                     initialFocus
+                    locale={ptBR}
                   />
                 </PopoverContent>
               </Popover>
