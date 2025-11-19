@@ -1,23 +1,111 @@
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useTheme } from 'next-themes';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
+
+// Schemas for validation
+const signInSchema = z.object({
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
+  password: z.string().min(1, { message: 'Senha é obrigatória.' }),
+});
+
+const signUpSchema = z.object({
+  email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
+  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
+});
+
+// Mapping server errors to user-friendly messages
+const errorMap: { [key: string]: string } = {
+  'Invalid login credentials': 'E-mail ou senha inválidos.',
+  'User already registered': 'Este e-mail já está cadastrado.',
+  'Email not confirmed': 'Seu e-mail ainda não foi confirmado. Por favor, verifique sua caixa de entrada.',
+};
 
 const Login = () => {
   const { session } = useSession();
-  const { resolvedTheme } = useTheme();
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
 
-  useEffect(() => {
-    // You can add logic here if needed when the session changes
-  }, [session]);
+  const signInForm = useForm<z.infer<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  const signUpForm = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  const handleSignIn = async (values: z.infer<typeof signInSchema>) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
+    if (error) throw error;
+  };
+
+  const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
+    const { error } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+    });
+    if (error) throw error;
+    setMessage('Cadastro realizado! Verifique seu e-mail para o link de confirmação.');
+  };
+
+  const handleSubmit = async (values: any) => {
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      if (view === 'sign_in') {
+        await handleSignIn(values);
+      } else {
+        await handleSignUp(values);
+      }
+    } catch (err: any) {
+      setError(errorMap[err.message] || 'Ocorreu um erro. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleView = () => {
+    setError(null);
+    setMessage(null);
+    signInForm.reset();
+    signUpForm.reset();
+    setView(view === 'sign_in' ? 'sign_up' : 'sign_in');
+  };
 
   if (session) {
     return <Navigate to="/dashboard" replace />;
   }
+
+  const isSignIn = view === 'sign_in';
+  const form = isSignIn ? signInForm : signUpForm;
+  const title = isSignIn ? 'Acesse sua conta' : 'Crie sua conta';
+  const buttonLabel = isSignIn ? 'Entrar' : 'Cadastrar';
+  const loadingLabel = isSignIn ? 'Entrando...' : 'Cadastrando...';
+  const toggleLinkText = isSignIn ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre';
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
@@ -27,56 +115,65 @@ const Login = () => {
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
-            Acesse sua conta
+            {title}
           </h2>
         </div>
-        <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-lg">
-          <Auth
-            supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
-            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-            providers={[]}
-            localization={{
-              variables: {
-                sign_in: {
-                  email_label: 'Seu email',
-                  password_label: 'Sua senha',
-                  email_input_placeholder: 'seuemail@exemplo.com',
-                  password_input_placeholder: 'Sua senha',
-                  button_label: 'Entrar',
-                  link_text: 'Já tem uma conta? Entre',
-                  loading_button_label: 'Entrando...',
-                },
-                sign_up: {
-                  email_label: 'Seu email',
-                  password_label: 'Crie uma senha',
-                  email_input_placeholder: 'seuemail@exemplo.com',
-                  password_input_placeholder: 'Sua nova senha',
-                  button_label: 'Cadastrar',
-                  link_text: 'Não tem uma conta? Cadastre-se',
-                  confirmation_text:
-                    'Verifique seu e-mail para o link de confirmação',
-                  loading_button_label: 'Cadastrando...',
-                },
-                forgotten_password: {
-                  email_label: 'Seu email',
-                  email_input_placeholder: 'seuemail@exemplo.com',
-                  button_label: 'Enviar instruções',
-                  link_text: 'Esqueceu sua senha?',
-                  loading_button_label: 'Enviando instruções...',
-                  confirmation_text:
-                    'Verifique seu e-mail para o link de redefinição',
-                },
-                update_password: {
-                  password_label: 'Nova senha',
-                  password_input_placeholder: 'Sua nova senha',
-                  button_label: 'Atualizar senha',
-                  loading_button_label: 'Atualizando...',
-                  confirmation_text: 'Sua senha foi atualizada com sucesso',
-                },
-              },
-            }}
-          />
+        <div className="rounded-lg border bg-card p-8 text-card-foreground shadow-lg">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Erro</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {message && (
+                 <Alert variant="default">
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertTitle>Sucesso</AlertTitle>
+                    <AlertDescription>{message}</AlertDescription>
+                </Alert>
+              )}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seu email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="seuemail@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{isSignIn ? 'Sua senha' : 'Crie uma senha'}</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder={isSignIn ? 'Sua senha' : 'Pelo menos 6 caracteres'} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? loadingLabel : buttonLabel}
+              </Button>
+            </form>
+          </Form>
+          <div className="mt-6 text-center text-sm">
+            <p>
+              <span onClick={toggleView} className="font-medium text-primary hover:underline cursor-pointer">
+                {toggleLinkText}
+              </span>
+            </p>
+            {/* A recuperação de senha pode ser adicionada depois, se necessário */}
+          </div>
         </div>
       </div>
     </div>
