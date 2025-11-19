@@ -76,12 +76,22 @@ const Login = () => {
     setError(null);
     setMessage(null);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
       });
-      if (error) throw error;
-      setMessage('Cadastro realizado! Verifique seu e-mail para o link de confirmação.');
+
+      if (error) {
+        throw error;
+      }
+
+      // Supabase returns a user with an empty identities array for an existing user 
+      // when email confirmation is enabled. This is to prevent email enumeration.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError('Este e-mail já está cadastrado. Por favor, faça login.');
+      } else {
+        setMessage('Cadastro realizado! Verifique seu e-mail para o link de confirmação.');
+      }
     } catch (err: any) {
       setError(errorMap[err.message] || 'Ocorreu um erro. Tente novamente.');
     } finally {
