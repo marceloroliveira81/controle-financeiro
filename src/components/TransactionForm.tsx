@@ -122,35 +122,39 @@ export const TransactionForm = ({ setOpen, transaction }: TransactionFormProps) 
           control={form.control}
           name="amount"
           render={({ field }) => {
+            const formatToBRL = (num: number) => num.toFixed(2).replace('.', ',');
+            const parseFromBRL = (str: string) => parseFloat(str.replace(',', '.'));
+
             const [displayValue, setDisplayValue] = React.useState(() =>
-              typeof field.value === 'number' ? field.value.toFixed(2) : ''
+              typeof field.value === 'number' ? formatToBRL(field.value) : ''
             );
 
             React.useEffect(() => {
               const formValue = field.value;
-              const displayNum = parseFloat(displayValue);
-
-              if (typeof formValue === 'number' && formValue !== displayNum) {
-                setDisplayValue(formValue.toFixed(2));
+              if (typeof formValue === 'number') {
+                const displayNum = parseFromBRL(displayValue);
+                if (formValue !== displayNum) {
+                  setDisplayValue(formatToBRL(formValue));
+                }
+              } else if (displayValue) {
+                setDisplayValue('');
               }
-              if (formValue === undefined || formValue === null) {
-                  setDisplayValue('');
-              }
-            }, [field.value, displayValue]);
+            }, [field.value]);
 
             const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               const value = e.target.value;
-              if (/^\d*\.?\d{0,2}$/.test(value) || value === '') {
+              if (/^\d*,?\d{0,2}$/.test(value) || value === '') {
                 setDisplayValue(value);
-                field.onChange(value === '' ? undefined : parseFloat(value));
+                const numericValue = value === '' ? undefined : parseFromBRL(value);
+                field.onChange(numericValue);
               }
             };
 
             const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-              const value = parseFloat(e.target.value);
+              const value = parseFromBRL(e.target.value);
               if (!isNaN(value)) {
                 const roundedValue = parseFloat(value.toFixed(2));
-                setDisplayValue(roundedValue.toFixed(2));
+                setDisplayValue(formatToBRL(roundedValue));
                 field.onChange(roundedValue);
               } else {
                 setDisplayValue('');
@@ -166,7 +170,7 @@ export const TransactionForm = ({ setOpen, transaction }: TransactionFormProps) 
                   <Input
                     type="text"
                     inputMode="decimal"
-                    placeholder="0.00"
+                    placeholder="0,00"
                     {...field}
                     value={displayValue}
                     onChange={handleChange}
