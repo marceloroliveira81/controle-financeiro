@@ -1,3 +1,4 @@
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -56,7 +57,7 @@ export const TransactionForm = ({ setOpen, transaction }: TransactionFormProps) 
     resolver: zodResolver(formSchema),
     defaultValues: {
       description: transaction?.description || '',
-      amount: transaction?.amount || 0,
+      amount: transaction?.amount || undefined,
       date: transaction?.date ? new Date(transaction.date) : new Date(),
       type: transaction?.type || undefined,
       category: transaction?.category || '',
@@ -120,15 +121,62 @@ export const TransactionForm = ({ setOpen, transaction }: TransactionFormProps) 
         <FormField
           control={form.control}
           name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Valor</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="0.00" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            const [displayValue, setDisplayValue] = React.useState(() =>
+              typeof field.value === 'number' ? field.value.toFixed(2) : ''
+            );
+
+            React.useEffect(() => {
+              const formValue = field.value;
+              const displayNum = parseFloat(displayValue);
+
+              if (typeof formValue === 'number' && formValue !== displayNum) {
+                setDisplayValue(formValue.toFixed(2));
+              }
+              if (formValue === undefined || formValue === null) {
+                  setDisplayValue('');
+              }
+            }, [field.value, displayValue]);
+
+            const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+              const value = e.target.value;
+              if (/^\d*\.?\d{0,2}$/.test(value) || value === '') {
+                setDisplayValue(value);
+                field.onChange(value === '' ? undefined : parseFloat(value));
+              }
+            };
+
+            const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+              const value = parseFloat(e.target.value);
+              if (!isNaN(value)) {
+                const roundedValue = parseFloat(value.toFixed(2));
+                setDisplayValue(roundedValue.toFixed(2));
+                field.onChange(roundedValue);
+              } else {
+                setDisplayValue('');
+                field.onChange(undefined);
+              }
+              field.onBlur();
+            };
+
+            return (
+              <FormItem>
+                <FormLabel>Valor</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    {...field}
+                    value={displayValue}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
         <FormField
           control={form.control}
