@@ -27,7 +27,12 @@ const signInSchema = z.object({
 
 const signUpSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
-  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
+  password: z.string()
+    .min(8, { message: 'A senha deve ter pelo menos 8 caracteres.' })
+    .regex(/[a-z]/, { message: 'A senha deve conter pelo menos uma letra minúscula.' })
+    .regex(/[A-Z]/, { message: 'A senha deve conter pelo menos uma letra maiúscula.' })
+    .regex(/[0-9]/, { message: 'A senha deve conter pelo menos um número.' })
+    .regex(/[^a-zA-Z0-9]/, { message: 'A senha deve conter pelo menos um caractere especial.' }),
 });
 
 // Mapping server errors to user-friendly messages
@@ -196,7 +201,7 @@ const Login = () => {
                       <FormItem>
                         <FormLabel>Crie uma senha</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Pelo menos 6 caracteres" {...field} />
+                          <Input type="password" placeholder="Senha forte com 8+ caracteres" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
